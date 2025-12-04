@@ -1,0 +1,14 @@
+# Dependencias principales de Django
+django>=5.0,<6.0
+django-crispy-forms
+crispy-bootstrap4
+whitenoise
+
+# Dependencias para Azure
+psycopg2-binary  # Para PostgreSQL en Azure
+python-dotenv    # Para manejar variables de entorno
+gunicorn         # Servidor WSGI para producción en Azure
+
+# Dependencias adicionales recomendadas para Azure
+azure-identity   # Para autenticación con Azure
+azure-keyvault-secrets  # Para manejar secrets de Azure Key Vault (opcional)
