@@ -1,0 +1,15 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/4d1d1803-355c-436a-b4aa-6ff7509a614c/resourceGroups/DjangoWebRG/providers/Microsoft.Web/sites/roberto-djangowebapp",
+    "appService.deploySubpath": ".",
+    "python.analysis.extraPaths": ["./"],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.pylintArgs": [
+        "--load-plugins=pylint_django",
+        "--django-settings-module=project.settings"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "files.associations": {
+        "*.html": "html",
+        "*.css": "css"
+    }
+}
