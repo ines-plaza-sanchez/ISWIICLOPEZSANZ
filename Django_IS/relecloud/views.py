@@ -57,8 +57,6 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
         cruise = form.cleaned_data['cruise']
         notes = form.cleaned_data['notes']
         
-        print(f"📧 Enviando correo a {email}...")  # Debug
-        
         subject = f'New Info Request for {cruise.name}'
         message = f'''Hello {name},
 
