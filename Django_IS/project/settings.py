@@ -99,15 +99,8 @@ WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'djangodbprod',  # Tu base de datos en Azure
-        'USER': 'rober',         # Tu usuario
-        'PASSWORD': 'COMEmasPOLLO1',  # Tu contraseña
-        'HOST': 'djangowebdbpostgre.postgres.database.azure.com',  # Tu servidor Azure
-        'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',  # Importante para Azure
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -247,3 +240,8 @@ if 'WEBSITE_HOSTNAME' in os.environ:
     }
     
     print("🔥 CONFIGURACIÓN AZURE COMPLETADA 🔥")
+
+# Email configuration
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@relecloud.com'
+
