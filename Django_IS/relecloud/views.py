@@ -3,6 +3,8 @@ from django.urls import reverse_lazy
 from . import models
 from django.views import generic
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.mail import send_mail
+from django.conf import settings
 
 # Create your views here.
 def index(request):
@@ -46,3 +48,37 @@ class InfoRequestCreate(SuccessMessageMixin, generic.CreateView):
     fields = ['name', 'email', 'cruise', 'notes']
     success_url = reverse_lazy('index')
     success_message = 'Thank you, %(name)s! We will email you when we have more information about %(cruise)s!'
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        
+        name = form.cleaned_data['name']
+        email = form.cleaned_data['email']
+        cruise = form.cleaned_data['cruise']
+        notes = form.cleaned_data['notes']
+        
+        subject = f'New Info Request for {cruise.name}'
+        message = f'''Hello {name},
+
+Thank you for your interest in {cruise.name}!
+
+Your request details:
+- Cruise: {cruise.name}
+- Email: {email}
+- Notes: {notes}
+
+We will contact you soon with more information.
+
+Best regards,
+ReleCloud Team
+'''
+        
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        
+        return response
