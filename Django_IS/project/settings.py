@@ -145,6 +145,10 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# Media files (User uploaded content)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Configuración de archivos estáticos para Azure
 print("🚨🚨🚨 SETTINGS.PY VERSIÓN 2025-10-05 10:47 CORREGIDO 🚨🚨🚨")
 if 'WEBSITE_HOSTNAME' in os.environ:  # Detectar Azure
