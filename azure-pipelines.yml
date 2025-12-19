@@ -1,0 +1,208 @@
+# ================================================================
+# PIPELINE CI/CD - RELECLOUD DJANGO APP
+# ================================================================
+# Proyecto: Relecloud Extended (Práctica 2 - ISW2)
+# Metodología: Git Flow con Feature Branches
+# DoD (Definition of Done):
+#   ✅ Código compilable sin errores
+#   ✅ Pruebas (Unitarias/TDD) pasadas (verde)
+#   ✅ Pull Request aprobada por al menos 1 compañero (Code Review)
+#   ✅ Pipeline de Azure ejecutado correctamente
+#
+# Criterios de Aceptación: Quality Attribute Scenarios (QAS)
+# ================================================================
+
+# Trigger: Ejecutar pipeline en push a cualquier rama
+trigger:
+  branches:
+    include:
+      - main          # Rama principal (producción)
+      - develop       # Rama de desarrollo (opcional en Git Flow)
+      - feature/*     # Ramas de características (PT1, PT2, PT3, PT4)
+      - hotfix/*      # Ramas de corrección urgente
+      - release/*     # Ramas de preparación para release
+
+# Ejecutar el pipeline en cada Pull Request a main
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  pythonVersion: '3.11'
+  projectFolder: 'Django_IS'
+
+stages:
+# ========================================
+# STAGE 1: BUILD Y TESTS (Para todas las ramas)
+# ========================================
+# Este stage valida el código según la DoD:
+# - Compila sin errores (Python syntax check)
+# - Pasa todas las pruebas unitarias (incluido TDD)
+# - Cumple criterios de calidad
+# ========================================
+- stage: BuildAndTest
+  displayName: '🔨 Build y Ejecutar Tests (DoD)'
+  jobs:
+  - job: TestJob
+    displayName: 'Validar Código según DoD'
+    steps:
+    
+    # Paso 1: Configurar Python
+    - task: UsePythonVersion@0
+      displayName: 'Usar Python $(pythonVersion)'
+      inputs:
+        versionSpec: '$(pythonVersion)'
+    
+    # Paso 2: Mostrar información del entorno
+    - script: |
+        python --version
+        pip --version
+        echo "Working Directory: $(System.DefaultWorkingDirectory)"
+        ls -la
+      displayName: 'Información del entorno'
+    
+    # Paso 3: Instalar dependencias
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r $(projectFolder)/requirements.txt
+      displayName: 'Instalar dependencias'
+    
+    # ============================================
+    # DoD CHECK 1: Código compilable sin errores
+    # ============================================
+    - script: |
+        echo "📋 Verificando DoD: Código compilable sin errores"
+        python -m py_compile $(projectFolder)/manage.py
+        python -m py_compile $(projectFolder)/project/*.py
+        python -m py_compile $(projectFolder)/relecloud/*.py
+        echo "✅ DoD CUMPLIDA: Código compila sin errores de sintaxis"
+      displayName: '✅ DoD #1: Código compilable sin errores'
+      continueOnError: false
+    
+    # Paso 5: Ejecutar migraciones (necesario para tests)
+    - script: |
+        cd $(projectFolder)
+        python manage.py makemigrations --check --dry-run
+        python manage.py migrate --run-syncdb
+      displayName: 'Preparar base de datos para tests'
+    
+    # ============================================
+    # DoD CHECK 2: Pruebas (Unitarias/TDD) pasadas
+    # ============================================
+    # Ejecuta TODOS los tests del proyecto:
+    # - Tests unitarios (unit tests)
+    # - Tests TDD (Test-Driven Development)
+    # - Tests funcionales
+    # NOTA: Recomendado TDD para PT1 (emails) y PT3 (reviews)
+    - script: |
+        cd $(projectFolder)
+        echo "📋 Ejecutando tests (unitarios + TDD)..."
+        python manage.py test --verbosity=2
+        echo "✅ DoD CUMPLIDA: Todos los tests pasan (verde)"
+      displayName: '✅ DoD #2: Pruebas (Unitarias/TDD) pasadas (verde)'
+      continueOnError: false
+    
+    # Paso 7: Colectar archivos estáticos
+    - script: |
+        cd $(projectFolder)
+        python manage.py collectstatic --noinput
+      displayName: 'Colectar archivos estáticos'
+    
+    # Paso 8: Verificación de seguridad (opcional pero recomendado)
+    - script: |
+        pip install bandit
+        bandit -r $(projectFolder)/relecloud/ -f txt || true
+      displayName: 'Análisis de seguridad (opcional)'
+      continueOnError: true
+    
+    # Paso 9: Publicar resultados
+    - task: PublishTestResults@2
+      displayName: 'Publicar resultados de tests'
+      condition: always()
+      inputs:
+        testResultsFormat: 'JUnit'
+        testResultsFiles: '**/test-results.xml'
+        failTaskOnFailedTests: true
+      continueOnError: true
+
+# ========================================
+# STAGE 2: DEPLOY (Solo para main)
+# ========================================
+# Este stage solo se ejecuta cuando:
+# 1. El Pull Request ha sido APROBADO
+# 2. Se hace MERGE a la rama 'main'
+# 3. Todos los tests han pasado (green build)
+# 
+# IMPORTANTE: Siguiendo Git Flow, solo main se despliega a producción
+# ========================================
+- stage: Deploy
+  displayName: '🚀 Desplegar a Azure App Service (Producción)'
+  dependsOn: BuildAndTest
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployWeb
+    displayName: 'Desplegar aplicación Django'
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          
+          # Paso 1: Configurar Python
+          - task: UsePythonVersion@0
+            displayName: 'Usar Python $(pythonVersion)'
+            inputs:
+              versionSpec: '$(pythonVersion)'
+          
+          # Paso 2: Instalar dependencias
+          - script: |
+              python -m pip install --upgrade pip
+              pip install -r $(Pipeline.Workspace)/s/$(projectFolder)/requirements.txt
+            displayName: 'Instalar dependencias para deploy'
+          
+          # Paso 3: Preparar archivos para deploy
+          - script: |
+              cd $(Pipeline.Workspace)/s/$(projectFolder)
+              python manage.py collectstatic --noinput
+            displayName: 'Preparar archivos estáticos'
+          
+          # ============================================
+          # DoD CHECK 3: Pipeline ejecutado correctamente
+          # ============================================
+          - task: AzureWebApp@1
+            displayName: '✅ DoD #3: Pipeline ejecutado - Deploy a Producción'
+            inputs:
+              azureSubscription: 'Azure-Service-Connection' # 🔧 CAMBIAR: Nombre de tu Service Connection
+              appType: 'webAppLinux'
+              appName: 'rober-djangowebapp-babgd9bkfybugqfd' # 🔧 CAMBIAR: Nombre de tu App Service
+              package: '$(Pipeline.Workspace)/s/$(projectFolder)'
+              runtimeStack: 'PYTHON|3.11'
+              startUpCommand: 'gunicorn --bind=0.0.0.0 --timeout 600 project.wsgi'
+          
+          # Paso 5: Verificar que el deploy fue exitoso
+          - script: |
+              echo "✅ Aplicación desplegada correctamente"
+              echo "URL: https://rober-djangowebapp-babgd9bkfybugqfd.azurewebsites.net"
+            displayName: 'Deploy completado'
+
+# ========================================
+# STAGE 3: POST-DEPLOY VERIFICATION (Opcional)
+# ========================================
+- stage: Verify
+  displayName: 'Verificar Deploy'
+  dependsOn: Deploy
+  condition: succeeded()
+  jobs:
+  - job: HealthCheck
+    displayName: 'Health Check de la aplicación'
+    steps:
+    - script: |
+        echo "Esperando 30 segundos para que la app inicie..."
+        sleep 30
+        curl -f https://rober-djangowebapp-babgd9bkfybugqfd.azurewebsites.net || exit 1
+      displayName: 'Verificar que la app responde'
+      continueOnError: true
