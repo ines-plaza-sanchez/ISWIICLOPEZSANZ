@@ -5,14 +5,108 @@ ReleCloud - {{ destination }}
 {% endblock %}
 
 {% block content %}
-<h1>{{ destination }}</h1>
-<p>
-{{ destination.description }}
-</p>
-<p>You can explore {{ destination }} on the following cruises:</p>
-<ul class="list-group">
-    {% for cruise in destination.cruises.all %}
-    <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">{{ cruise }}</a>
-    {% endfor %}
-</ul>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ destination }}</h1>
+            
+            <!-- Ratings Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Ratings & Reviews</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <div class="display-4">
+                                {% if destination.get_average_rating > 0 %}
+                                    {{ destination.get_average_rating|floatformat:1 }}★
+                                {% else %}
+                                    <span class="text-muted">No ratings yet</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ destination.get_review_count }} review{{ destination.get_review_count|pluralize }}</small>
+                        </div>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'destination_review' destination.id %}" class="btn btn-primary btn-sm">Write a Review</a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Login to Review</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <p>
+                {{ destination.description }}
+            </p>
+            
+            <h3>Cruises to {{ destination }}</h3>
+            <p>You can explore {{ destination }} on the following cruises:</p>
+            <ul class="list-group mb-4">
+                {% for cruise in destination.cruises.all %}
+                <a class="list-group-item list-group-item-action" href="{% url 'cruise_detail' cruise.id %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>{{ cruise }}</span>
+                        {% if cruise.get_average_rating > 0 %}
+                            <span class="badge bg-warning text-dark">{{ cruise.get_average_rating|floatformat:1 }}★</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </ul>
+            
+            <!-- Reviews Section -->
+            {% if destination.destination_reviews.all %}
+                <h3>Customer Reviews</h3>
+                <div class="reviews-list">
+                    {% for review in destination.destination_reviews.all %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">
+                                            <strong>{{ review.user.first_name|default:review.user.username }}</strong>
+                                            <span class="badge bg-warning text-dark">
+                                                {% for star in "12345"|slice:":"|add:review.rating %}★{% endfor %}
+                                                {% for star in "12345"|slice:review.rating %}☆{% endfor %}
+                                            </span>
+                                        </h6>
+                                        <small class="text-muted">{{ review.created_at|date:"SHORT_DATE_FORMAT" }}</small>
+                                    </div>
+                                    {% if review.user == user %}
+                                        <a href="{% url 'destination_review' destination.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    {% endif %}
+                                </div>
+                                {% if review.comment %}
+                                    <p class="card-text mt-2">{{ review.comment }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info mt-4">
+                    <p>No reviews yet. Be the first to share your experience!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            {% if destination.image %}
+                <img src="{{ destination.image.url }}" class="img-fluid rounded" alt="{{ destination.name }}">
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .display-4 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #ffc107;
+    }
+    
+    .reviews-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+</style>
 {% endblock content %}

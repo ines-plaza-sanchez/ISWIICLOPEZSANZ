@@ -16,7 +16,9 @@ urlpatterns = [
     path('destination/add/', views.DestinationCreateView.as_view(), name='destination_form'),
     path('destination/<int:pk>/update/', views.DestinationUpdateView.as_view(), name='destination_form'),
     path('destination/<int:pk>/delete/', views.DestinationDeleteView.as_view(), name='destination_confirm_delete'),
+    path('destination/<int:pk>/review/', views.DestinationReviewCreateView.as_view(), name='destination_review'),
     path('cruise/<int:pk>/', views.CruiseDetailView.as_view(), name='cruise_detail'),
+    path('cruise/<int:pk>/review/', views.CruiseReviewCreateView.as_view(), name='cruise_review'),
     path('info_request/', views.InfoRequestCreate.as_view(), name='info_request'),
     # Vistas de diagnóstico temporal
     path('debug/', debug_views.debug_info, name='debug_info'),

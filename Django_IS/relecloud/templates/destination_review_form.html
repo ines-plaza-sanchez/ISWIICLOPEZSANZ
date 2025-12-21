@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Write a Review - {{ destination.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1>Write a Review for {{ destination.name }}</h1>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="id_rating" class="form-label">Rating <span class="text-danger">*</span></label>
+                    <div>
+                        <div class="btn-group-vertical w-100" role="group">
+                            {% for value, label in form.rating.field.choices %}
+                                <input type="radio" class="btn-check" name="rating" id="rating_{{ value }}" value="{{ value }}" {% if form.rating.value == value|stringformat:"d" %}checked{% endif %} required>
+                                <label class="btn btn-outline-warning" for="rating_{{ value }}">
+                                    {% for star in "12345"|slice:":"|add:value %}★{% endfor %}
+                                    {% for star in "12345"|slice:value %}☆{% endfor %}
+                                    ({{ label }})
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% if form.rating.errors %}
+                        <div class="text-danger mt-2">
+                            {{ form.rating.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_comment" class="form-label">Comment (Optional)</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="text-danger mt-2">
+                            {{ form.comment.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                    <a href="{% url 'destination_detail' destination.pk %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    #id_comment {
+        min-height: 120px;
+    }
+    
+    .btn-group-vertical {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-check:checked + .btn {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+</style>
+{% endblock %}
